@@ -22,6 +22,11 @@ urlpatterns = [
     ),
 
     path(
+        "attendance/",
+        include("attendance.urls")
+    ),
+
+    path(
         "",
         include("accounts.urls")
     ),

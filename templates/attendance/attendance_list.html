@@ -1,0 +1,811 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Attendance | HR SaaS</title>
+
+    <link
+        href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+        rel="stylesheet"
+    >
+
+    <link
+        rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"
+    >
+
+    <style>
+
+        body {
+            background: #f5f7fb;
+        }
+
+        .navbar-brand {
+            font-weight: 700;
+            letter-spacing: .5px;
+        }
+
+        .page-header {
+            background: linear-gradient(
+                135deg,
+                #0d6efd,
+                #6610f2
+            );
+            color: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,.08);
+        }
+
+        .stat-card {
+            border: none;
+            border-radius: 16px;
+            box-shadow: 0 5px 20px rgba(0,0,0,.06);
+            transition: .2s;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-3px);
+        }
+
+        .attendance-card {
+            border: none;
+            border-radius: 18px;
+            box-shadow: 0 5px 25px rgba(0,0,0,.06);
+        }
+
+        .table {
+            vertical-align: middle;
+        }
+
+        .table thead th {
+            background: #f8f9fa;
+            white-space: nowrap;
+            font-size: 14px;
+        }
+
+        .employee-name {
+            font-weight: 600;
+        }
+
+        .status-badge {
+            padding: 7px 12px;
+            border-radius: 30px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .empty-state {
+            padding: 70px 20px;
+        }
+
+        footer {
+            margin-top: 70px;
+            background: #212529;
+            color: #adb5bd;
+            padding: 30px 0;
+        }
+
+        footer h6 {
+            color: white;
+        }
+
+    </style>
+
+</head>
+
+
+<body>
+
+
+<!-- ========================================================
+     NAVBAR
+========================================================= -->
+
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark shadow-sm">
+
+    <div class="container">
+
+        <a
+            class="navbar-brand"
+            href="/dashboard/"
+        >
+            <i class="bi bi-people-fill me-2"></i>
+            HR SaaS
+        </a>
+
+
+        <button
+            class="navbar-toggler"
+            type="button"
+            data-bs-toggle="collapse"
+            data-bs-target="#navbarMenu"
+        >
+            <span class="navbar-toggler-icon"></span>
+        </button>
+
+
+        <div
+            class="collapse navbar-collapse"
+            id="navbarMenu"
+        >
+
+            <ul class="navbar-nav me-auto">
+
+                <li class="nav-item">
+                    <a
+                        class="nav-link"
+                        href="/dashboard/"
+                    >
+                        <i class="bi bi-speedometer2 me-1"></i>
+                        Dashboard
+                    </a>
+                </li>
+
+
+                <li class="nav-item">
+                    <a
+                        class="nav-link"
+                        href="/employees/"
+                    >
+                        <i class="bi bi-person-badge me-1"></i>
+                        Employees
+                    </a>
+                </li>
+
+
+                <li class="nav-item">
+                    <a
+                        class="nav-link active"
+                        href="/attendance/"
+                    >
+                        <i class="bi bi-calendar-check me-1"></i>
+                        Attendance
+                    </a>
+                </li>
+
+            </ul>
+
+
+            {% if request.user.is_authenticated %}
+
+                <span class="text-white me-3">
+
+                    <i class="bi bi-person-circle me-1"></i>
+
+                    {{ request.user.username }}
+
+                </span>
+
+
+                <form
+                    method="post"
+                    action="/logout/"
+                    class="d-inline"
+                >
+
+                    {% csrf_token %}
+
+                    <button
+                        type="submit"
+                        class="btn btn-outline-light btn-sm"
+                    >
+                        <i class="bi bi-box-arrow-right me-1"></i>
+                        Logout
+                    </button>
+
+                </form>
+
+            {% endif %}
+
+        </div>
+
+    </div>
+
+</nav>
+
+
+
+<!-- ========================================================
+     MAIN CONTENT
+========================================================= -->
+
+<div class="container py-5">
+
+
+    <!-- PAGE HEADER -->
+
+    <div class="page-header mb-4">
+
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+
+            <div>
+
+                <h1 class="fw-bold mb-2">
+
+                    <i class="bi bi-calendar-check me-2"></i>
+
+                    Attendance Management
+
+                </h1>
+
+                <p class="mb-0 opacity-75">
+
+                    Manage employee attendance records,
+                    working hours and attendance status.
+
+                </p>
+
+            </div>
+
+
+            <div>
+
+                <a
+                    href="{% url 'attendance_create' %}"
+                    class="btn btn-light btn-lg"
+                >
+
+                    <i class="bi bi-plus-circle me-1"></i>
+
+                    Mark Attendance
+
+                </a>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+
+    <!-- ====================================================
+         STATISTICS
+    ===================================================== -->
+
+    <div class="row g-4 mb-4">
+
+
+        <!-- TOTAL -->
+
+        <div class="col-md-6 col-xl-3">
+
+            <div class="card stat-card h-100">
+
+                <div class="card-body">
+
+                    <div class="d-flex justify-content-between">
+
+                        <div>
+
+                            <p class="text-muted mb-1">
+                                Total Records
+                            </p>
+
+                            <h2 class="fw-bold mb-0">
+                                {{ total_count }}
+                            </h2>
+
+                        </div>
+
+                        <div class="fs-1 text-primary">
+
+                            <i class="bi bi-calendar2-week"></i>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- PRESENT -->
+
+        <div class="col-md-6 col-xl-3">
+
+            <div class="card stat-card h-100">
+
+                <div class="card-body">
+
+                    <div class="d-flex justify-content-between">
+
+                        <div>
+
+                            <p class="text-muted mb-1">
+                                Present
+                            </p>
+
+                            <h2 class="fw-bold text-success mb-0">
+                                {{ present_count }}
+                            </h2>
+
+                        </div>
+
+                        <div class="fs-1 text-success">
+
+                            <i class="bi bi-check-circle"></i>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- ABSENT -->
+
+        <div class="col-md-6 col-xl-3">
+
+            <div class="card stat-card h-100">
+
+                <div class="card-body">
+
+                    <div class="d-flex justify-content-between">
+
+                        <div>
+
+                            <p class="text-muted mb-1">
+                                Absent
+                            </p>
+
+                            <h2 class="fw-bold text-danger mb-0">
+                                {{ absent_count }}
+                            </h2>
+
+                        </div>
+
+                        <div class="fs-1 text-danger">
+
+                            <i class="bi bi-x-circle"></i>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- LEAVE -->
+
+        <div class="col-md-6 col-xl-3">
+
+            <div class="card stat-card h-100">
+
+                <div class="card-body">
+
+                    <div class="d-flex justify-content-between">
+
+                        <div>
+
+                            <p class="text-muted mb-1">
+                                Leave
+                            </p>
+
+                            <h2 class="fw-bold text-warning mb-0">
+                                {{ leave_count }}
+                            </h2>
+
+                        </div>
+
+                        <div class="fs-1 text-warning">
+
+                            <i class="bi bi-calendar-x"></i>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+
+    <!-- ====================================================
+         ATTENDANCE TABLE
+    ===================================================== -->
+
+    <div class="card attendance-card">
+
+        <div class="card-header bg-white border-0 p-4">
+
+            <div class="d-flex justify-content-between align-items-center">
+
+                <div>
+
+                    <h4 class="fw-bold mb-1">
+
+                        Attendance Records
+
+                    </h4>
+
+                    <p class="text-muted mb-0">
+
+                        View employee attendance history
+
+                    </p>
+
+                </div>
+
+
+                <span class="badge bg-primary rounded-pill px-3 py-2">
+
+                    {{ total_count }} Records
+
+                </span>
+
+            </div>
+
+        </div>
+
+
+        <div class="card-body p-0">
+
+            {% if attendances %}
+
+                <div class="table-responsive">
+
+                    <table class="table table-hover mb-0">
+
+                        <thead>
+
+                            <tr>
+
+                                <th class="px-4">
+                                    #
+                                </th>
+
+                                <th>
+                                    Employee
+                                </th>
+
+                                <th>
+                                    Date
+                                </th>
+
+                                <th>
+                                    Check In
+                                </th>
+
+                                <th>
+                                    Check Out
+                                </th>
+
+                                <th>
+                                    Working Hours
+                                </th>
+
+                                <th>
+                                    Status
+                                </th>
+
+                                <th>
+                                    Actions
+                                </th>
+
+                            </tr>
+
+                        </thead>
+
+
+                        <tbody>
+
+                            {% for attendance in attendances %}
+
+                                <tr>
+
+                                    <td class="px-4">
+
+                                        {{ forloop.counter }}
+
+                                    </td>
+
+
+                                    <td>
+
+                                        <div class="employee-name">
+
+                                            {{ attendance.employee.first_name }}
+                                            {{ attendance.employee.last_name }}
+
+                                        </div>
+
+                                    </td>
+
+
+                                    <td>
+
+                                        <i class="bi bi-calendar3 text-muted me-1"></i>
+
+                                        {{ attendance.date|date:"d M Y" }}
+
+                                    </td>
+
+
+                                    <td>
+
+                                        {% if attendance.check_in %}
+
+                                            <span class="text-success">
+
+                                                <i class="bi bi-box-arrow-in-right me-1"></i>
+
+                                                {{ attendance.check_in|time:"h:i A" }}
+
+                                            </span>
+
+                                        {% else %}
+
+                                            <span class="text-muted">
+                                                —
+                                            </span>
+
+                                        {% endif %}
+
+                                    </td>
+
+
+                                    <td>
+
+                                        {% if attendance.check_out %}
+
+                                            <span class="text-danger">
+
+                                                <i class="bi bi-box-arrow-right me-1"></i>
+
+                                                {{ attendance.check_out|time:"h:i A" }}
+
+                                            </span>
+
+                                        {% else %}
+
+                                            <span class="text-muted">
+                                                —
+                                            </span>
+
+                                        {% endif %}
+
+                                    </td>
+
+
+                                    <td>
+
+                                        {% if attendance.working_hours %}
+
+                                            <span class="fw-semibold">
+
+                                                {{ attendance.working_hours }} hrs
+
+                                            </span>
+
+                                        {% else %}
+
+                                            <span class="text-muted">
+                                                —
+                                            </span>
+
+                                        {% endif %}
+
+                                    </td>
+
+
+                                    <td>
+
+                                        {% if attendance.status == "Present" %}
+
+                                            <span class="status-badge bg-success-subtle text-success">
+
+                                                <i class="bi bi-check-circle me-1"></i>
+
+                                                Present
+
+                                            </span>
+
+
+                                        {% elif attendance.status == "Absent" %}
+
+                                            <span class="status-badge bg-danger-subtle text-danger">
+
+                                                <i class="bi bi-x-circle me-1"></i>
+
+                                                Absent
+
+                                            </span>
+
+
+                                        {% elif attendance.status == "Half Day" %}
+
+                                            <span class="status-badge bg-info-subtle text-info">
+
+                                                <i class="bi bi-clock me-1"></i>
+
+                                                Half Day
+
+                                            </span>
+
+
+                                        {% elif attendance.status == "Leave" %}
+
+                                            <span class="status-badge bg-warning-subtle text-warning">
+
+                                                <i class="bi bi-calendar-x me-1"></i>
+
+                                                Leave
+
+                                            </span>
+
+
+                                        {% endif %}
+
+                                    </td>
+
+
+                                    <td>
+
+                                        <div class="d-flex gap-2">
+
+                                            <a
+                                                href="{% url 'attendance_update' attendance.pk %}"
+                                                class="btn btn-sm btn-outline-primary"
+                                                title="Edit"
+                                            >
+
+                                                <i class="bi bi-pencil"></i>
+
+                                            </a>
+
+
+                                            <a
+                                                href="{% url 'attendance_delete' attendance.pk %}"
+                                                class="btn btn-sm btn-outline-danger"
+                                                title="Delete"
+                                            >
+
+                                                <i class="bi bi-trash"></i>
+
+                                            </a>
+
+                                        </div>
+
+                                    </td>
+
+                                </tr>
+
+                            {% endfor %}
+
+                        </tbody>
+
+                    </table>
+
+                </div>
+
+
+            {% else %}
+
+                <div class="empty-state text-center">
+
+                    <div class="display-1 text-muted mb-3">
+
+                        <i class="bi bi-calendar-x"></i>
+
+                    </div>
+
+                    <h4 class="fw-bold">
+
+                        No Attendance Records
+
+                    </h4>
+
+                    <p class="text-muted">
+
+                        No attendance records have been created yet.
+
+                    </p>
+
+
+                    <a
+                        href="{% url 'attendance_create' %}"
+                        class="btn btn-primary"
+                    >
+
+                        <i class="bi bi-plus-circle me-1"></i>
+
+                        Mark First Attendance
+
+                    </a>
+
+                </div>
+
+            {% endif %}
+
+        </div>
+
+    </div>
+
+</div>
+
+
+
+<!-- ========================================================
+     FOOTER
+========================================================= -->
+
+<footer>
+
+    <div class="container">
+
+        <div class="row">
+
+            <div class="col-md-6">
+
+                <h6>
+
+                    <i class="bi bi-people-fill me-2"></i>
+
+                    HR SaaS
+
+                </h6>
+
+                <p class="small mb-0">
+
+                    Smart Human Resource Management System
+                    for modern organizations.
+
+                </p>
+
+            </div>
+
+
+            <div class="col-md-6 text-md-end mt-3 mt-md-0">
+
+                <p class="small mb-1">
+
+                    Employee Management • Attendance • HR Analytics
+
+                </p>
+
+                <p class="small mb-0">
+
+                    © 2026 HR SaaS. All Rights Reserved.
+
+                </p>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</footer>
+
+
+
+<script
+    src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js">
+</script>
+
+
+</body>
+
+</html>
